@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOLFIN Dokümantasyon Sistemi</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; background-color: #f3f4f6; }
+    .view { display: none; }
+    .view.active { display: flex; }
+    .admin-tab { display: none !important; }
+    .admin-tab.active { display: flex !important; flex-direction: column; flex: 1; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-gray-800">
+  
+  <div id="login-view" class="view active w-full max-w-md">
+   <div class="bg-white rounded-2xl shadow-xl p-8 w-full border border-gray-100">
+    <h1 class="text-center font-bold mb-8 text-2xl text-gray-900">DOLFIN Dokümantasyon</h1>
+    <form id="login-form" class="space-y-5">
+     <div>
+       <label class="block mb-1 font-medium text-sm" for="serial-input">Seri Numarası</label> 
+       <input id="serial-input" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500" type="text" placeholder="Örn: 0326062">
+     </div>
+     <div>
+       <label class="block mb-1 font-medium text-sm" for="model-input">Makine Modeli</label> 
+       <input id="model-input" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500" type="text" placeholder="Örn: KBN 1B">
+     </div>
+     <button type="submit" class="w-full py-3 rounded-lg font-semibold transition hover:opacity-90 bg-red-600 text-white">Giriş Yap</button>
+    </form>
+    <div class="mt-6 text-center">
+     <p class="text-sm mb-2 text-gray-500">Sisteme giriş yapmakta zorlanıyor musunuz?</p>
+     <button type="button" id="help-btn" class="text-sm underline font-medium text-red-600 hover:text-red-700">Yardım Al</button>
+    </div>
+   </div>
+  </div>
+
+  <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+    <button type="button" id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
+    <h2 class="font-bold mb-4 text-xl">Sistem Giriş Yardımı</h2>
+    <p class="text-gray-600 leading-relaxed">Makinenizin üzerinde yer alan bilgi etiketindeki seri numarasını ve model adını eksiksiz giriniz. Yönetici yetkisi ile giriş yapmak için kullanıcı adı olarak "admin", şifre alanına ise belirlenen yönetici kodunu girmelisiniz.</p>
+   </div>
+  </div>
+
+  <div id="docs-view" class="view w-full max-w-3xl flex-col">
+   <div class="flex items-center justify-between mb-6">
+    <h2 class="font-bold text-2xl text-gray-900">Makine Dokümanları</h2>
+    <button type="button" id="docs-back" class="flex items-center gap-1 text-sm font-medium bg-white px-4 py-2 border rounded-lg hover:bg-gray-50 transition"><i data-lucide="arrow-left" style="width:16px;height:16px"></i> <span>Geri Dön</span></button>
+   </div>
+   <div id="docs-list" class="space-y-3"></div>
+   <p id="docs-empty" class="text-center text-gray-500 py-12 hidden">Bu makineye ait yüklenmiş bir doküman bulunamadı.</p>
+  </div>
+
+<div id="admin-view" class="view w-full flex-col h-[calc(100vh-2rem)]">
+   
+   <nav class="w-full bg-white shadow-sm rounded-t-xl flex items-center justify-between px-6 py-3 mb-0 border-b">
+    <div class="flex-1">
+     <h2 class="font-bold text-lg">Yönetici Paneli</h2>
+    </div>
+    
+    <div class="flex items-center gap-2 justify-center">
+     <button type="button" id="tab-dokuman" class="px-4 py-2 rounded-lg font-semibold transition bg-red-600 text-white shadow-sm">Dokümanlar</button> 
+     <button type="button" id="tab-makine" class="px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-100 text-gray-700 hover:text-red-600">Makineler</button> 
+    </div>
+
+    <div class="flex-1 flex items-center justify-end gap-5">
+     <button type="button" id="open-add-form" class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition hover:opacity-90 bg-red-600 text-white shadow-sm">
+         <i data-lucide="plus" style="width:18px;height:18px"></i> <span>Yeni Doküman Ekle</span>
+     </button>
+     <div class="h-6 w-px bg-gray-300"></div>
+     <button type="button" id="admin-back" class="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-red-600 transition">
+         <i data-lucide="log-out" style="width:18px;height:18px"></i> <span>Çıkış Yap</span>
+     </button>
+    </div>
+   </nav>
+   
+   <div id="tab-dokuman-content" class="admin-tab active w-full flex flex-col flex-1 bg-white rounded-b-xl shadow p-3">
+    
+    <div class="overflow-x-auto border rounded-lg flex-1">
+     <table class="w-full text-sm text-left whitespace-nowrap">
+      <thead class="bg-red-600 text-white">
+       <tr>
+        <th class="px-4 py-3 font-semibold">Doküman Adı</th>
+        <th class="px-4 py-3 font-semibold">Üst Seri</th>
+        <th class="px-4 py-3 font-semibold">Alt Seri</th>
+        <th class="px-4 py-3 font-semibold">Doküman Tipi</th>
+        <th class="px-4 py-3 font-semibold">Versiyon</th>
+        <th class="px-4 py-3 font-semibold">Yükleme Tarihi</th>
+        <th class="px-4 py-3 font-semibold">Doküman Kodu</th>
+        <th class="px-4 py-3 font-semibold">Dosya</th>
+        <th class="px-4 py-3 font-semibold">İşlem</th>
+       </tr>
+      </thead>
+      <tbody id="admin-table-body"></tbody>
+     </table>
+     <p id="admin-empty" class="text-gray-500 text-center py-8 hidden">Sistemde henüz doküman bulunmamaktadır.</p>
+    </div>
+   </div>
+
+   <div id="tab-makine-content" class="admin-tab w-full flex flex-col flex-1 bg-white rounded-b-xl shadow p-3">
+    <div class="overflow-x-auto border rounded-lg flex-1">
+     <table class="w-full text-sm text-left whitespace-nowrap">
+      <thead class="bg-red-600 text-white">
+       <tr>
+        <th class="px-4 py-3 font-semibold">Seri Numarası</th>
+        <th class="px-4 py-3 font-semibold">Üst Model</th>
+        <th class="px-4 py-3 font-semibold">Makine Modeli</th>
+        <th class="px-4 py-3 font-semibold">Doküman Tipi</th>
+        <th class="px-4 py-3 font-semibold">Doküman Kodu</th>
+       </tr>
+      </thead>
+      <tbody id="machine-table-body"></tbody>
+     </table>
+     <p id="machine-empty" class="text-gray-500 text-center py-8 hidden">Sistemde henüz makine bulunmamaktadır.</p>
+    </div>
+   </div>
+   
+   <div id="tab-makine-content" class="admin-tab w-full bg-white rounded-b-xl shadow p-6">
+    <h3 class="font-semibold mb-4 text-lg">Makine Yönetimi</h3>
+    <p class="text-gray-500">Bu modül henüz aktif edilmemiştir.</p>
+   </div>
+  </div>
+
+  <div id="confirm-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
+    <p class="font-medium mb-4 text-lg">Bu dokümanı kalıcı olarak silmek istediğinize emin misiniz?</p>
+    <div class="flex gap-3 justify-end">
+        <button type="button" id="confirm-cancel" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal</button> 
+        <button type="button" id="confirm-ok" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium transition">Sil</button>
+    </div>
+   </div>
+  </div>
+
+  <div id="add-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+    <div class="flex items-center justify-between mb-6 border-b pb-4">
+     <h2 class="font-bold text-xl">Yeni Doküman Yükle</h2>
+     <button type="button" id="close-add-modal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
+    </div>
+    
+    <form id="admin-form" class="space-y-4">
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-docname">Doküman Adı</label> 
+        <input id="admin-docname" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-upper-serial">Üst Seri (Seri Grubu)</label> 
+        <select id="admin-upper-serial" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"> 
+            <option value="">Seçiniz...</option> 
+            <option value="LYM">LYM</option> 
+            <option value="VDL">VDL</option> 
+            <option value="KBN">KBN</option> 
+            <option value="ULT">ULT</option> 
+            <option value="PYT">PYT</option> 
+            <option value="KNV">KNV</option> 
+            <option value="MST">MST</option> 
+            <option value="RTS">RTS</option> 
+            <option value="PRO">PRO</option> 
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-lower-serial">Makine Modeli (Alt Seri)</label> 
+        <input id="admin-lower-serial" type="text" placeholder="Örn: KBN 1B P DS OTO 1350" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-doctype">Doküman Tipi</label> 
+        <select id="admin-doctype" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"> 
+            <option value="">Seçiniz...</option> 
+            <option value="Kullanım Kılavuzu">Kullanım Kılavuzu</option> 
+            <option value="Elektrik Şeması">Elektrik Şeması</option> 
+            <option value="P&ID Şeması">P&ID Şeması</option> 
+            <option value="Risk Analizi">Risk Analizi</option> 
+            <option value="CE Belgesi">CE Belgesi</option> 
+            <option value="Garanti Belgesi">Garanti Belgesi</option> 
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-version">Versiyon No</label> 
+        <input id="admin-version" type="text" placeholder="Örn: 01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-doccode">Doküman Kodu (Otomatik)</label> 
+        <input id="admin-doccode" type="text" class="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-lg px-3 py-2 focus:outline-none" readonly>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="admin-file">PDF/Dosya Seçimi</label>
+        <div class="flex gap-2">
+            <input id="admin-file" type="file" class="hidden"> 
+            <button type="button" id="file-button" class="flex-1 bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded-lg font-medium hover:bg-gray-200 transition flex items-center gap-2 justify-center">
+                <i data-lucide="upload" style="width:18px;height:18px"></i> <span id="file-name">Dosya Seçin</span>
+            </button>
+        </div>
+      </div>
+     </div>
+
+     <div id="add-machine-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+    <div class="flex items-center justify-between mb-6 border-b pb-4">
+     <h2 class="font-bold text-xl">Yeni Makine Kaydı</h2>
+     <button type="button" id="close-add-machine-modal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
+    </div>
+    
+    <form id="machine-form" class="space-y-4">
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-serial">Seri Numarası</label> 
+        <input id="machine-serial" type="text" placeholder="Örn: 0326062" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-upper">Üst Model (Seri Grubu)</label> 
+        <select id="machine-upper" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"> 
+            <option value="">Seçiniz...</option> 
+            <option value="LYM">LYM</option> 
+            <option value="VDL">VDL</option> 
+            <option value="KBN">KBN</option> 
+            <option value="ULT">ULT</option> 
+            <option value="PYT">PYT</option> 
+            <option value="KNV">KNV</option> 
+            <option value="MST">MST</option> 
+            <option value="RTS">RTS</option> 
+            <option value="PRO">PRO</option> 
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-lower">Makine Modeli (Alt Seri)</label> 
+        <input id="machine-lower" type="text" placeholder="Örn: KBN 1B P DS OTO 1350" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+     </div>
+     
+     <div class="flex gap-3 justify-end pt-6 border-t mt-6">
+      <button type="button" id="close-add-machine-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal Et</button> 
+      <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
+          <i data-lucide="save" style="width:18px;height:18px"></i> <span>Makineyi Kaydet</span>
+      </button>
+     </div>
+     
+     <span id="machine-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Makine başarıyla eklendi!</span> 
+     <span id="machine-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
+    </form>
+   </div>
+  </div>
+     
+     <div class="flex gap-3 justify-end pt-6 border-t mt-6">
+      <button type="button" id="close-add-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal Et</button> 
+      <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
+          <i data-lucide="save" style="width:18px;height:18px"></i> <span>Sisteme Kaydet</span>
+      </button>
+     </div>
+     
+     <span id="admin-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Doküman başarıyla eklendi!</span> 
+     <span id="admin-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
+    </form>
+   </div>
+  </div>
+
+  <script>
+    // --- LOKAL VERİ TABANI SİMÜLASYONU (Canva SDK Yerine) ---
+    window.dataSdk = {
+      data: JSON.parse(localStorage.getItem('dolfin_docs')) || [],
+      handler: null,
+      async init(handler) {
+        this.handler = handler;
+        if(this.handler && this.handler.onDataChanged) {
+            this.handler.onDataChanged(this.data);
+        }
+      },
+      async create(newItem) {
+        newItem.__backendId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+        this.data.push(newItem);
+        localStorage.setItem('dolfin_docs', JSON.stringify(this.data));
+        if(this.handler) this.handler.onDataChanged(this.data);
+        return { isOk: true };
+      },
+      async delete(target) {
+        this.data = this.data.filter(d => d.__backendId !== target.__backendId);
+        localStorage.setItem('dolfin_docs', JSON.stringify(this.data));
+        if(this.handler) this.handler.onDataChanged(this.data);
+        return { isOk: true };
+      }
+    };
+    // --------------------------------------------------------
+
+    let allData = [];
+    let currentSerial = '';
+    let currentModel = '';
+    let deleteTarget = null;
+    let currentAdminTab = 'dokuman'; // Hangi sekmede olduğumuzu takip edecek
+    
+    // Dokuman tipi → kod kısaltması
+    const docTypeCodeMap = {
+      'Kullanım Kılavuzu': 'KK',
+      'Elektrik Şeması': 'ES',
+      'P&ID Şeması': 'PD',
+      'Risk Analizi': 'RA',
+      'CE Belgesi': 'CE',
+      'Garanti Belgesi': 'GB'
+    };
+
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+function switchTab(tab) {
+  currentAdminTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab + '-content').classList.add('active');
+  
+  const btnDokuman = document.getElementById('tab-dokuman');
+  const btnMakine = document.getElementById('tab-makine');
+  const btnAddForm = document.getElementById('open-add-form');
+  
+  const btnSpan = btnAddForm.querySelector('span');
+  
+  if(tab === 'dokuman') {
+      btnDokuman.className = "px-4 py-2 rounded-lg font-semibold transition bg-red-600 text-white shadow-sm";
+      btnMakine.className = "px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-100 text-gray-700 hover:text-red-600";
+      if (btnSpan) btnSpan.textContent = "Yeni Doküman Ekle";
+  } else {
+      btnMakine.className = "px-4 py-2 rounded-lg font-semibold transition bg-red-600 text-white shadow-sm";
+      btnDokuman.className = "px-4 py-2 rounded-lg font-semibold transition hover:bg-gray-100 text-gray-700 hover:text-red-600";
+      if (btnSpan) btnSpan.textContent = "Yeni Makine Ekle";
+  }
+}
+
+    function generateDocumentCode() {
+      const upperSerial = document.getElementById('admin-upper-serial').value.trim();
+      const docType = document.getElementById('admin-doctype').value.trim();
+      const version = document.getElementById('admin-version').value.trim();
+      
+      if (!upperSerial || !docType || !version) {
+        document.getElementById('admin-doccode').value = '';
+        return;
+      }
+      
+      const typeCode = docTypeCodeMap[docType] || '';
+      document.getElementById('admin-doccode').value = upperSerial + typeCode + version;
+    }
+
+const handler = {
+  onDataChanged(data) {
+    allData = data;
+    renderAdminTable();   // Doküman tablosunu doldurur
+    renderMachineTable(); // Makine tablosunu doldurur (Yeni eklenen)
+    renderDocsList();     // Müşteri ekranını doldurur
+  }
+};
+
+    (async () => {
+      await window.dataSdk.init(handler);
+      lucide.createIcons();
+      switchTab('dokuman');
+    })();
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const serial = document.getElementById('serial-input').value.trim();
+      const model = document.getElementById('model-input').value.trim();
+      if (!serial || !model) return;
+      
+      // Admin Girişi
+      if (serial === 'admin' && model === 'dolfindoc') {
+        showView('admin-view');
+      } else {
+        // Standart Müşteri Girişi
+        currentSerial = serial;
+        currentModel = model;
+        renderDocsList();
+        showView('docs-view');
+      }
+    });
+
+    // Help
+    document.getElementById('help-btn').addEventListener('click', () => document.getElementById('help-modal').classList.remove('hidden'));
+    document.getElementById('close-modal').addEventListener('click', () => document.getElementById('help-modal').classList.add('hidden'));
+    
+// Üstteki + Ekle Butonunun Akıllı Tıklama Kontrolü
+    document.getElementById('open-add-form').addEventListener('click', () => {
+      if (currentAdminTab === 'dokuman') {
+        // Dokümanlar sekmesindeysek doküman modalını aç
+        document.getElementById('add-modal').classList.remove('hidden');
+        selectedFile = null;
+        document.getElementById('file-name').textContent = 'Dosya Seçin';
+      } else {
+        // Makineler sekmesindeysek yeni oluşturduğumuz makine modalını aç
+        document.getElementById('add-machine-modal').classList.remove('hidden');
+      }
+    });
+
+    // Yeni Makine Modalı Kapatma Butonları (Hemen altına ekleyebilirsin)
+    document.getElementById('close-add-machine-modal').addEventListener('click', () => document.getElementById('add-machine-modal').classList.add('hidden'));
+    document.getElementById('close-add-machine-modal-btn').addEventListener('click', () => document.getElementById('add-machine-modal').classList.add('hidden'));
+    
+    document.getElementById('close-add-modal').addEventListener('click', () => document.getElementById('add-modal').classList.add('hidden'));
+    document.getElementById('close-add-modal-btn').addEventListener('click', () => document.getElementById('add-modal').classList.add('hidden'));
+
+    // File button
+    document.getElementById('file-button').addEventListener('click', () => {
+      document.getElementById('admin-file').click();
+    });
+    
+    document.getElementById('admin-file').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        document.getElementById('file-name').textContent = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+      }
+    });
+    
+    // Document code auto-generation
+    document.getElementById('admin-upper-serial').addEventListener('change', generateDocumentCode);
+    document.getElementById('admin-doctype').addEventListener('change', generateDocumentCode);
+    document.getElementById('admin-version').addEventListener('change', generateDocumentCode);
+    
+    // Back
+    document.getElementById('docs-back').addEventListener('click', () => {
+        document.getElementById('login-form').reset();
+        showView('login-view');
+    });
+    document.getElementById('admin-back').addEventListener('click', () => {
+        document.getElementById('login-form').reset();
+        showView('login-view');
+    });
+    
+    // Tabs
+    document.getElementById('tab-dokuman').addEventListener('click', () => switchTab('dokuman'));
+    document.getElementById('tab-makine').addEventListener('click', () => switchTab('makine'));
+    
+    // Docs list for regular users
+    function renderDocsList() {
+      const container = document.getElementById('docs-list');
+      const empty = document.getElementById('docs-empty');
+      // Kullanıcının girdiği bilgilere göre filtrele
+      const filtered = allData.filter(d => 
+        (d.lower_serial.toLowerCase().includes(currentModel.toLowerCase()) || d.serial_number === currentSerial)
+      );
+      
+      if (filtered.length === 0) { 
+          container.innerHTML = ''; 
+          empty.classList.remove('hidden'); 
+          return; 
+      }
+      
+      empty.classList.add('hidden');
+      container.innerHTML = filtered.map(d => `
+        <div class="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
+          <div class="flex flex-col">
+            <span class="font-bold text-gray-800">${esc(d.document_name)}</span>
+            <span class="text-xs text-gray-500 font-medium">Model: ${esc(d.lower_serial)} | Kod: ${esc(d.document_code)}</span>
+          </div>
+          <a href="#" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition" onclick="alert('Dosya indiriliyor: ${esc(d.document_file)}')">
+            <i data-lucide="download" style="width:16px;height:16px"></i> İndir
+          </a>
+        </div>`).join('');
+      
+      lucide.createIcons();
+    }
+
+    // Admin form
+    document.getElementById('admin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('admin-docname').value.trim();
+      const upperSerial = document.getElementById('admin-upper-serial').value.trim();
+      const lowerSerial = document.getElementById('admin-lower-serial').value.trim();
+      const docType = document.getElementById('admin-doctype').value.trim();
+      const version = document.getElementById('admin-version').value.trim();
+      const docCode = document.getElementById('admin-doccode').value.trim();
+      
+      if (!name || !upperSerial || !lowerSerial || !docType || !version || !selectedFile) {
+        document.getElementById('admin-error').textContent = 'Lütfen tüm alanları doldurunuz ve dosya seçiniz.';
+        document.getElementById('admin-error').classList.remove('hidden');
+        return;
+      }
+      
+      const uploadDate = new Date().toISOString().split('T')[0];
+      
+      const result = await window.dataSdk.create({
+        document_name: name,
+        document_file: selectedFile.name,
+        machine_model: lowerSerial,
+        serial_number: '',
+        upper_serial: upperSerial,
+        lower_serial: lowerSerial,
+        document_type: docType,
+        version_number: version,
+        upload_date: uploadDate,
+        document_code: docCode,
+        created_at: new Date().toISOString()
+      });
+      
+      const btn = e.target.querySelector('button[type=submit]');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      
+      if (result.isOk) {
+        document.getElementById('admin-status').classList.remove('hidden');
+        document.getElementById('admin-error').classList.add('hidden');
+        e.target.reset();
+        selectedFile = null;
+        document.getElementById('file-name').textContent = 'Dosya Seçin';
+        document.getElementById('admin-doccode').value = '';
+        setTimeout(() => {
+          document.getElementById('admin-status').classList.add('hidden');
+          document.getElementById('add-modal').classList.add('hidden');
+        }, 2000);
+      } else {
+        document.getElementById('admin-error').textContent = 'Hata oluştu.';
+        document.getElementById('admin-error').classList.remove('hidden');
+      }
+      
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    });
+    
+    // Admin table
+    function renderAdminTable() {
+      const tbody = document.getElementById('admin-table-body');
+      const empty = document.getElementById('admin-empty');
+      if (allData.length === 0) { 
+          tbody.innerHTML = ''; 
+          empty.classList.remove('hidden'); 
+          return;
+      }
+      
+      empty.classList.add('hidden');
+      tbody.innerHTML = allData.map(d => `
+        <tr class="border-b hover:bg-gray-50 transition">
+          <td class="px-4 py-3 font-medium text-gray-800">${esc(d.document_name)}</td>
+          <td class="px-4 py-3">${esc(d.upper_serial)}</td>
+          <td class="px-4 py-3">${esc(d.lower_serial)}</td>
+          <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">${esc(d.document_type)}</span></td>
+          <td class="px-4 py-3">${esc(d.version_number)}</td>
+          <td class="px-4 py-3">${esc(d.upload_date)}</td>
+          <td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(d.document_code)}</td>
+          <td class="px-4 py-3">
+              <a href="#" onclick="alert('Demo: ${esc(d.document_file)} dosyası indiriliyor.')" class="underline text-red-600 hover:text-red-800 flex items-center gap-1 font-medium">
+                  <i data-lucide="download" style="width:14px;height:14px"></i> İndir
+              </a>
+          </td>
+          <td class="px-4 py-3">
+              <button type="button" class="text-gray-400 hover:text-red-600 transition" onclick="confirmDelete('${d.__backendId}')" title="Sil">
+                  <i data-lucide="trash-2" style="width:18px;height:18px"></i>
+              </button>
+          </td>
+        </tr>`).join('');
+      
+      lucide.createIcons();
+    }
+
+    function renderMachineTable() {
+  const tbody = document.getElementById('machine-table-body');
+  const empty = document.getElementById('machine-empty');
+  if (!tbody || !empty) return; // Eğer HTML henüz yüklenmediyse hata vermesin
+
+  if (allData.length === 0) { 
+      tbody.innerHTML = ''; 
+      empty.classList.remove('hidden'); 
+      return;
+  }
+  
+  empty.classList.add('hidden');
+  tbody.innerHTML = allData.map(d => `
+    <tr class="border-b hover:bg-gray-50 transition">
+      <td class="px-4 py-3 font-medium text-gray-800">${esc(d.serial_number || '-')}</td>
+      <td class="px-4 py-3">${esc(d.upper_serial || '-')}</td>
+      <td class="px-4 py-3">${esc(d.lower_serial || '-')}</td>
+      <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">${esc(d.document_type || '-')}</span></td>
+      <td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(d.document_code || '-')}</td>
+    </tr>`).join('');
+}
+
+    function confirmDelete(id) {
+      deleteTarget = allData.find(d => d.__backendId === id);
+      if (!deleteTarget) return;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+    
+    document.getElementById('confirm-cancel').addEventListener('click', () => { 
+        document.getElementById('confirm-modal').classList.add('hidden'); 
+        deleteTarget = null; 
+    });
+    
+    document.getElementById('confirm-ok').addEventListener('click', async () => {
+      if (!deleteTarget) return;
+      const btn = document.getElementById('confirm-ok');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      await window.dataSdk.delete(deleteTarget);
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      document.getElementById('confirm-modal').classList.add('hidden');
+      deleteTarget = null;
+    });
+    
+    function esc(str) { 
+        const d = document.createElement('div'); 
+        d.textContent = str || ''; 
+        return d.innerHTML;
+    }
+
+// Makine Formunun Kayıt İşlemi (Submit)
+    document.getElementById('machine-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const serial = document.getElementById('machine-serial').value.trim();
+      const upper = document.getElementById('machine-upper').value.trim();
+      const lower = document.getElementById('machine-lower').value.trim();
+      
+      if (!serial || !upper || !lower) {
+        document.getElementById('machine-error').textContent = 'Lütfen tüm alanları doldurunuz.';
+        document.getElementById('machine-error').classList.remove('hidden');
+        return;
+      }
+      
+      const uploadDate = new Date().toISOString().split('T')[0];
+      
+      // Veritabanına kayıt atıyoruz (Döküman alanları makine kaydı olduğu için temiz geçiyor)
+      const result = await window.dataSdk.create({
+        document_name: 'Yeni Makine Tanımı',
+        document_file: '',
+        machine_model: lower,
+        serial_number: serial,
+        upper_serial: upper,
+        lower_serial: lower,
+        document_type: 'Sistem Kaydı',
+        version_number: '-',
+        upload_date: uploadDate,
+        document_code: upper + '-' + serial,
+        created_at: new Date().toISOString()
+      });
+      
+      const btn = e.target.querySelector('button[type=submit]');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      
+      if (result.isOk) {
+        document.getElementById('machine-status').classList.remove('hidden');
+        document.getElementById('machine-error').classList.add('hidden');
+        e.target.reset();
+        setTimeout(() => {
+          document.getElementById('machine-status').classList.add('hidden');
+          document.getElementById('add-machine-modal').classList.add('hidden');
+        }, 2000);
+      } else {
+        document.getElementById('machine-error').textContent = 'Hata oluştu.';
+        document.getElementById('machine-error').classList.remove('hidden');
+      }
+      
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    });
+
+  </script>
+</body>
+</html>

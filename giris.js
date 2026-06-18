@@ -304,18 +304,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   lucide.createIcons();
   switchTab('dokuman');
 
-  // Login
+  // Login - Doğrulamalı Giriş
   document.getElementById('login-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const serial = document.getElementById('serial-input').value.trim();
     const model = document.getElementById('model-input').value.trim();
+    const errorSpan = document.getElementById('login-error');
+
     if (!serial || !model) return;
 
+    // Admin girişi
     if (serial === 'admin' && model === 'dolfindoc') {
       showView('admin-view');
-    } else {
-      window.location.href = 'user.html?serial=' + encodeURIComponent(serial) + '&model=' + encodeURIComponent(model);
+      return;
     }
+
+    // Normal kullanıcı doğrulaması
+    const foundMachine = allData.machines.find(m => m.serial_number === serial);
+
+    if (!foundMachine) {
+      // Seri numarası sistemde hiç yok
+      errorSpan.textContent = 'Bu seri numarasına kayıtlı bir makine bulunamadı. Seri numarasını tekrar kontrol ediniz.';
+      errorSpan.classList.remove('hidden');
+      return;
+    }
+
+    // Seri no var ama model uyuşmuyor mu kontrol et
+    // Makinenin lower_serial'ı ile girilen modeli karşılaştır (kısmi eşleşme)
+    const girilenModel = model.toLowerCase();
+    const kayitliModel = (foundMachine.lower_serial || '').toLowerCase();
+
+    if (!kayitliModel.includes(girilenModel) && !girilenModel.includes(kayitliModel)) {
+      errorSpan.textContent = 'Makine modeli doğrulanamadı. Lütfen makine modelini tekrar kontrol ediniz.';
+      errorSpan.classList.remove('hidden');
+      return;
+    }
+
+    // Her şey doğru → user.html sayfasına yönlendir
+    errorSpan.classList.add('hidden');
+    currentSerial = serial;
+    currentModel = model;
+    window.location.href = 'user.html?serial=' + encodeURIComponent(serial) + '&model=' + encodeURIComponent(model);
   });
 
   // Help modal

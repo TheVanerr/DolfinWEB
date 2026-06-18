@@ -39,11 +39,12 @@
    </div>
   </div>
 
-  <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
-   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+    <div id="help-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full relative">
     <button type="button" id="close-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
-    <h2 class="font-bold mb-4 text-xl">Sistem Giriş Yardımı</h2>
-    <p class="text-gray-600 leading-relaxed">Makinenizin üzerinde yer alan bilgi etiketindeki seri numarasını ve model adını eksiksiz giriniz. Yönetici yetkisi ile giriş yapmak için kullanıcı adı olarak "admin", şifre alanına ise belirlenen yönetici kodunu girmelisiniz.</p>
+    <h2 class="font-bold mb-3 text-xl text-center">Sistem Giriş Yardımı</h2>
+    <p class="text-gray-600 leading-relaxed text-sm text-center mb-4">Makineniz üzerinde bulunan Kimlik etiketindeki Seri Numarası ve Makine Modeli değerlerini kullanarak sitemize giriş yapabilirsiniz.</p>
+    <img src="label.svg" alt="Makine Kimlik Etiketi" class="w-full h-auto rounded-lg border border-gray-200 shadow-sm">
    </div>
   </div>
 
@@ -435,7 +436,7 @@ function switchTab(tab) {
       switchTab('dokuman');
     })();
 
-    // Login
+        // Login
     document.getElementById('login-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const serial = document.getElementById('serial-input').value.trim();
@@ -446,11 +447,8 @@ function switchTab(tab) {
       if (serial === 'admin' && model === 'dolfindoc') {
         showView('admin-view');
       } else {
-        // Standart Müşteri Girişi
-        currentSerial = serial;
-        currentModel = model;
-        renderDocsList();
-        showView('docs-view');
+        // Standart Kullanıcı Girişi → user.html sayfasına yönlendir
+        window.location.href = 'user.html?serial=' + encodeURIComponent(serial) + '&model=' + encodeURIComponent(model);
       }
     });
 

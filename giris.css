@@ -1,0 +1,5 @@
+body { font-family: 'DM Sans', sans-serif; background-color: #f3f4f6; }
+.view { display: none; }
+.view.active { display: flex; }
+.admin-tab { display: none !important; }
+.admin-tab.active { display: flex !important; flex-direction: column; flex: 1; }

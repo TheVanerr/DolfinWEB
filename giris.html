@@ -101,16 +101,18 @@
     </div>
    </div>
 
-   <div id="tab-makine-content" class="admin-tab w-full flex flex-col flex-1 bg-white rounded-b-xl shadow p-3">
+      <div id="tab-makine-content" class="admin-tab w-full flex flex-col flex-1 bg-white rounded-b-xl shadow p-3">
     <div class="overflow-x-auto border rounded-lg flex-1">
      <table class="w-full text-sm text-left whitespace-nowrap">
       <thead class="bg-red-600 text-white">
        <tr>
-        <th class="px-4 py-3 font-semibold">Seri Numarası</th>
+                <th class="px-4 py-3 font-semibold">Seri Numarası</th>
         <th class="px-4 py-3 font-semibold">Üst Model</th>
         <th class="px-4 py-3 font-semibold">Makine Modeli</th>
         <th class="px-4 py-3 font-semibold">Doküman Tipi</th>
         <th class="px-4 py-3 font-semibold">Doküman Kodu</th>
+        <th class="px-4 py-3 font-semibold">Dosya</th>
+        <th class="px-4 py-3 font-semibold">İşlem</th>
        </tr>
       </thead>
       <tbody id="machine-table-body"></tbody>
@@ -119,10 +121,6 @@
     </div>
    </div>
    
-   <div id="tab-makine-content" class="admin-tab w-full bg-white rounded-b-xl shadow p-6">
-    <h3 class="font-semibold mb-4 text-lg">Makine Yönetimi</h3>
-    <p class="text-gray-500">Bu modül henüz aktif edilmemiştir.</p>
-   </div>
   </div>
 
   <div id="confirm-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
@@ -132,6 +130,53 @@
         <button type="button" id="confirm-cancel" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal</button> 
         <button type="button" id="confirm-ok" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium transition">Sil</button>
     </div>
+   </div>
+  </div>
+
+  <div id="add-machine-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+    <div class="flex items-center justify-between mb-6 border-b pb-4">
+     <h2 class="font-bold text-xl">Yeni Makine Kaydı</h2>
+     <button type="button" id="close-add-machine-modal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
+    </div>
+    
+    <form id="machine-form" class="space-y-4">
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-serial">Seri Numarası</label> 
+        <input id="machine-serial" type="text" placeholder="Örn: 0326062" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-upper">Üst Model (Seri Grubu)</label> 
+        <select id="machine-upper" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"> 
+            <option value="">Seçiniz...</option> 
+            <option value="LYM">LYM</option> 
+            <option value="VDL">VDL</option> 
+            <option value="KBN">KBN</option> 
+            <option value="ULT">ULT</option> 
+            <option value="PYT">PYT</option> 
+            <option value="KNV">KNV</option> 
+            <option value="MST">MST</option> 
+            <option value="RTS">RTS</option> 
+            <option value="PRO">PRO</option> 
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-lower">Makine Modeli (Alt Seri)</label> 
+        <input id="machine-lower" type="text" placeholder="Örn: KBN 1B P DS OTO 1350" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      </div>
+     </div>
+     
+     <div class="flex gap-3 justify-end pt-6 border-t mt-6">
+      <button type="button" id="close-add-machine-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal Et</button> 
+      <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
+          <i data-lucide="save" style="width:18px;height:18px"></i> <span>Makineyi Kaydet</span>
+      </button>
+     </div>
+     
+     <span id="machine-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Makine başarıyla eklendi!</span> 
+     <span id="machine-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
+    </form>
    </div>
   </div>
 
@@ -198,53 +243,6 @@
       </div>
      </div>
 
-     <div id="add-machine-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
-   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
-    <div class="flex items-center justify-between mb-6 border-b pb-4">
-     <h2 class="font-bold text-xl">Yeni Makine Kaydı</h2>
-     <button type="button" id="close-add-machine-modal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
-    </div>
-    
-    <form id="machine-form" class="space-y-4">
-     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-serial">Seri Numarası</label> 
-        <input id="machine-serial" type="text" placeholder="Örn: 0326062" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-upper">Üst Model (Seri Grubu)</label> 
-        <select id="machine-upper" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"> 
-            <option value="">Seçiniz...</option> 
-            <option value="LYM">LYM</option> 
-            <option value="VDL">VDL</option> 
-            <option value="KBN">KBN</option> 
-            <option value="ULT">ULT</option> 
-            <option value="PYT">PYT</option> 
-            <option value="KNV">KNV</option> 
-            <option value="MST">MST</option> 
-            <option value="RTS">RTS</option> 
-            <option value="PRO">PRO</option> 
-        </select>
-      </div>
-      <div class="md:col-span-2">
-        <label class="block text-sm font-medium mb-1 text-gray-700" for="machine-lower">Makine Modeli (Alt Seri)</label> 
-        <input id="machine-lower" type="text" placeholder="Örn: KBN 1B P DS OTO 1350" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-      </div>
-     </div>
-     
-     <div class="flex gap-3 justify-end pt-6 border-t mt-6">
-      <button type="button" id="close-add-machine-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal Et</button> 
-      <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
-          <i data-lucide="save" style="width:18px;height:18px"></i> <span>Makineyi Kaydet</span>
-      </button>
-     </div>
-     
-     <span id="machine-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Makine başarıyla eklendi!</span> 
-     <span id="machine-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
-    </form>
-   </div>
-  </div>
-     
      <div class="flex gap-3 justify-end pt-6 border-t mt-6">
       <button type="button" id="close-add-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal Et</button> 
       <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
@@ -254,6 +252,37 @@
      
      <span id="admin-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Doküman başarıyla eklendi!</span> 
      <span id="admin-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
+    </form>
+   </div>
+  </div>
+
+    <div id="assign-doc-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden z-50">
+   <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full relative">
+    <div class="flex items-center justify-between mb-6 border-b pb-4">
+     <h2 class="font-bold text-xl">Makineye Doküman Tanımla</h2>
+     <button type="button" id="close-assign-modal" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" style="width:24px;height:24px"></i></button>
+    </div>
+    
+    <form id="assign-doc-form" class="space-y-4">
+     <div>
+      <label class="block text-sm font-medium mb-1 text-gray-700">Makine Seri No</label>
+      <input id="assign-machine-serial-display" type="text" class="w-full border border-gray-200 bg-gray-100 text-gray-600 rounded-lg px-3 py-2" readonly>
+     </div>
+     <div>
+      <label class="block text-sm font-medium mb-1 text-gray-700" for="assign-doc-code">Doküman Kodu</label>
+      <input id="assign-doc-code" type="text" placeholder="Örn: KBNKK01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+      <p class="text-xs text-gray-500 mt-1">Sistemdeki bir dokümanın kodunu giriniz.</p>
+     </div>
+     
+     <div class="flex gap-3 justify-end pt-4 border-t mt-6">
+      <button type="button" id="close-assign-modal-btn" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium transition">İptal</button> 
+      <button type="submit" class="px-6 py-2 rounded-lg font-semibold transition hover:opacity-90 flex items-center gap-2 bg-red-600 text-white">
+          <i data-lucide="link" style="width:18px;height:18px"></i> <span>Dokümanı Tanımla</span>
+      </button>
+     </div>
+     
+     <span id="assign-status" class="block text-sm text-green-600 font-medium mt-2 hidden text-right">Doküman başarıyla tanımlandı!</span> 
+     <span id="assign-error" class="block text-sm text-red-600 font-medium mt-2 hidden text-right"></span>
     </form>
    </div>
   </div>
@@ -285,10 +314,11 @@
     };
     // --------------------------------------------------------
 
-    let allData = [];
+        let allData = [];
     let currentSerial = '';
     let currentModel = '';
     let deleteTarget = null;
+    let assignTargetMachine = null;
     let currentAdminTab = 'dokuman'; // Hangi sekmede olduğumuzu takip edecek
     
     // Dokuman tipi → kod kısaltması
@@ -308,6 +338,7 @@
 
 function switchTab(tab) {
   currentAdminTab = tab;
+  document.getElementById('open-add-form').setAttribute('data-action', tab === 'dokuman' ? 'add-document' : 'add-machine');
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + tab + '-content').classList.add('active');
   
@@ -382,15 +413,81 @@ const handler = {
     
 // Üstteki + Ekle Butonunun Akıllı Tıklama Kontrolü
     document.getElementById('open-add-form').addEventListener('click', () => {
-      if (currentAdminTab === 'dokuman') {
+      const action = document.getElementById('open-add-form').getAttribute('data-action');
+      if (action === 'add-document') {
         // Dokümanlar sekmesindeysek doküman modalını aç
         document.getElementById('add-modal').classList.remove('hidden');
         selectedFile = null;
         document.getElementById('file-name').textContent = 'Dosya Seçin';
-      } else {
-        // Makineler sekmesindeysek yeni oluşturduğumuz makine modalını aç
+      } else if (action === 'add-machine') {
+        // Makineler sekmesindeysek makine modalını aç
         document.getElementById('add-machine-modal').classList.remove('hidden');
       }
+    });
+
+    // Makineye Doküman Tanımlama Modalı Kapatma
+    document.getElementById('close-assign-modal').addEventListener('click', () => {
+      document.getElementById('assign-doc-modal').classList.add('hidden');
+      assignTargetMachine = null;
+    });
+    document.getElementById('close-assign-modal-btn').addEventListener('click', () => {
+      document.getElementById('assign-doc-modal').classList.add('hidden');
+      assignTargetMachine = null;
+    });
+
+    // Makineye Doküman Tanımlama Formu
+    document.getElementById('assign-doc-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const docCode = document.getElementById('assign-doc-code').value.trim();
+      
+      if (!docCode) {
+        document.getElementById('assign-error').textContent = 'Lütfen bir doküman kodu giriniz.';
+        document.getElementById('assign-error').classList.remove('hidden');
+        return;
+      }
+      
+            // Doküman koduna sahip kaydı bul
+      const docRecord = allData.find(d => d.document_code === docCode && d.document_type !== 'Sistem Kaydı');
+      
+      if (!docRecord) {
+        document.getElementById('assign-error').textContent = 'Bu kodla eşleşen bir doküman bulunamadı.';
+        document.getElementById('assign-error').classList.remove('hidden');
+        return;
+      }
+      
+      // machine_serial bir dizi değilse (eski kayıtlar) diziye çevir
+      if (!Array.isArray(docRecord.machine_serial)) {
+        docRecord.machine_serial = docRecord.machine_serial ? [docRecord.machine_serial] : [];
+      }
+      
+      // Eğer doküman zaten bu makineye tanımlanmışsa uyar
+      if (docRecord.machine_serial.includes(assignTargetMachine.serial_number)) {
+        document.getElementById('assign-error').textContent = 'Bu doküman zaten bu makineye tanımlanmış.';
+        document.getElementById('assign-error').classList.remove('hidden');
+        return;
+      }
+      
+      // Doküman kaydını güncelle: machine_serial dizisine yeni seri numarasını ekle
+      docRecord.machine_serial.push(assignTargetMachine.serial_number);
+      
+      // localStorage'a kaydet
+      localStorage.setItem('dolfin_docs', JSON.stringify(allData));
+      
+      // UI'ı güncelle
+      document.getElementById('assign-status').classList.remove('hidden');
+      document.getElementById('assign-error').classList.add('hidden');
+      document.getElementById('assign-doc-code').value = '';
+      
+      // Tabloları yeniden render et
+      renderMachineTable();
+      renderAdminTable();
+      renderDocsList();
+      
+      setTimeout(() => {
+        document.getElementById('assign-status').classList.add('hidden');
+        document.getElementById('assign-doc-modal').classList.add('hidden');
+        assignTargetMachine = null;
+      }, 2000);
     });
 
     // Yeni Makine Modalı Kapatma Butonları (Hemen altına ekleyebilirsin)
@@ -432,14 +529,19 @@ const handler = {
     document.getElementById('tab-dokuman').addEventListener('click', () => switchTab('dokuman'));
     document.getElementById('tab-makine').addEventListener('click', () => switchTab('makine'));
     
-    // Docs list for regular users
+        // Docs list for regular users
     function renderDocsList() {
       const container = document.getElementById('docs-list');
       const empty = document.getElementById('docs-empty');
-      // Kullanıcının girdiği bilgilere göre filtrele
-      const filtered = allData.filter(d => 
-        (d.lower_serial.toLowerCase().includes(currentModel.toLowerCase()) || d.serial_number === currentSerial)
-      );
+      // Kullanıcının girdiği bilgilere göre filtrele:
+      // - Makine seri nosu eşleşen dokümanlar (machine_serial dizisinde varsa)
+      // - Veya lower_serial model adıyla eşleşen dokümanlar
+      const filtered = allData.filter(d => {
+        if (d.document_type === 'Sistem Kaydı') return false;
+        const serialMatch = Array.isArray(d.machine_serial) && d.machine_serial.includes(currentSerial);
+        const modelMatch = d.lower_serial && d.lower_serial.toLowerCase().includes(currentModel.toLowerCase());
+        return serialMatch || modelMatch;
+      });
       
       if (filtered.length === 0) { 
           container.innerHTML = ''; 
@@ -480,19 +582,20 @@ const handler = {
       
       const uploadDate = new Date().toISOString().split('T')[0];
       
-      const result = await window.dataSdk.create({
-        document_name: name,
-        document_file: selectedFile.name,
-        machine_model: lowerSerial,
-        serial_number: '',
-        upper_serial: upperSerial,
-        lower_serial: lowerSerial,
-        document_type: docType,
-        version_number: version,
-        upload_date: uploadDate,
-        document_code: docCode,
-        created_at: new Date().toISOString()
-      });
+            const result = await window.dataSdk.create({
+              document_name: name,
+              document_file: selectedFile.name,
+              machine_model: lowerSerial,
+              serial_number: '',
+              machine_serial: [], // Hangi makinelere ait olduğu (sonradan tanımlanabilir, birden çok olabilir)
+              upper_serial: upperSerial,
+              lower_serial: lowerSerial,
+              document_type: docType,
+              version_number: version,
+              upload_date: uploadDate,
+              document_code: docCode,
+              created_at: new Date().toISOString()
+            });
       
       const btn = e.target.querySelector('button[type=submit]');
       btn.disabled = true;
@@ -553,27 +656,77 @@ const handler = {
       lucide.createIcons();
     }
 
-    function renderMachineTable() {
+                function renderMachineTable() {
   const tbody = document.getElementById('machine-table-body');
   const empty = document.getElementById('machine-empty');
-  if (!tbody || !empty) return; // Eğer HTML henüz yüklenmediyse hata vermesin
+  if (!tbody || !empty) return;
 
-  if (allData.length === 0) { 
+  // Sadece makine kayıtlarını filtrele (document_type === 'Sistem Kaydı' olanlar)
+  const machines = allData.filter(d => d.document_type === 'Sistem Kaydı');
+  const docs = allData.filter(d => d.document_type !== 'Sistem Kaydı');
+
+  if (machines.length === 0) { 
       tbody.innerHTML = ''; 
       empty.classList.remove('hidden'); 
       return;
   }
   
   empty.classList.add('hidden');
-  tbody.innerHTML = allData.map(d => `
-    <tr class="border-b hover:bg-gray-50 transition">
-      <td class="px-4 py-3 font-medium text-gray-800">${esc(d.serial_number || '-')}</td>
-      <td class="px-4 py-3">${esc(d.upper_serial || '-')}</td>
-      <td class="px-4 py-3">${esc(d.lower_serial || '-')}</td>
-      <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold">${esc(d.document_type || '-')}</span></td>
-      <td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(d.document_code || '-')}</td>
-    </tr>`).join('');
+  
+  let html = '';
+  machines.forEach((m, idx) => {
+    // Makine üst satırı
+    html += `
+      <tr class="bg-gray-50 font-semibold border-b-2 border-gray-300">
+        <td class="px-4 py-3 text-gray-800">${esc(m.serial_number)}</td>
+        <td class="px-4 py-3">${esc(m.upper_serial)}</td>
+        <td class="px-4 py-3">${esc(m.lower_serial)}</td>
+        <td class="px-4 py-3">—</td>
+        <td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(m.document_code)}</td>
+        <td class="px-4 py-3">—</td>
+        <td class="px-4 py-3">
+          <button type="button" class="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium text-xs transition" onclick="openAssignDocModal('${esc(m.serial_number)}')" title="Doküman Tanımla">
+            <i data-lucide="plus-circle" style="width:16px;height:16px"></i> <span>Doküman Ekle</span>
+          </button>
+        </td>
+      </tr>`;
+    
+        // Bu makineye atanmış dokümanları bul (machine_serial dizisinde bu makinenin seri nosu geçenler)
+    const assignedDocs = docs.filter(d => Array.isArray(d.machine_serial) && d.machine_serial.includes(m.serial_number));
+    
+    if (assignedDocs.length > 0) {
+      assignedDocs.forEach(d => {
+        html += `
+          <tr class="border-b hover:bg-blue-50 transition bg-blue-50/30">
+            <td class="px-4 py-2 pl-8 text-gray-500 text-xs italic">↳ ${esc(d.document_name || '-')}</td>
+            <td class="px-4 py-2 text-xs">${esc(d.upper_serial || '-')}</td>
+            <td class="px-4 py-2 text-xs">${esc(d.lower_serial || '-')}</td>
+            <td class="px-4 py-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">${esc(d.document_type || '-')}</span></td>
+            <td class="px-4 py-2 font-mono text-xs text-gray-500">${esc(d.document_code || '-')}</td>
+            <td class="px-4 py-2">
+              <a href="#" onclick="event.preventDefault(); alert('Demo: ${esc(d.document_file || 'Dosya')} indiriliyor.')" class="text-red-600 hover:text-red-800 flex items-center gap-1 text-xs font-medium">
+                <i data-lucide="download" style="width:14px;height:14px"></i> İndir
+              </a>
+            </td>
+            <td class="px-4 py-2"></td>
+          </tr>`;
+      });
+    }
+  });
+  
+  tbody.innerHTML = html;
+  lucide.createIcons();
 }
+
+    function openAssignDocModal(serialNumber) {
+      assignTargetMachine = allData.find(d => d.serial_number === serialNumber && d.document_type === 'Sistem Kaydı');
+      if (!assignTargetMachine) return;
+      document.getElementById('assign-machine-serial-display').value = serialNumber;
+      document.getElementById('assign-doc-code').value = '';
+      document.getElementById('assign-status').classList.add('hidden');
+      document.getElementById('assign-error').classList.add('hidden');
+      document.getElementById('assign-doc-modal').classList.remove('hidden');
+    }
 
     function confirmDelete(id) {
       deleteTarget = allData.find(d => d.__backendId === id);
@@ -619,12 +772,13 @@ const handler = {
       
       const uploadDate = new Date().toISOString().split('T')[0];
       
-      // Veritabanına kayıt atıyoruz (Döküman alanları makine kaydı olduğu için temiz geçiyor)
+            // Veritabanına kayıt atıyoruz (Döküman alanları makine kaydı olduğu için temiz geçiyor)
       const result = await window.dataSdk.create({
         document_name: 'Yeni Makine Tanımı',
         document_file: '',
         machine_model: lower,
         serial_number: serial,
+        machine_serial: [],
         upper_serial: upper,
         lower_serial: lower,
         document_type: 'Sistem Kaydı',

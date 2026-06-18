@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DOLFIN Dokümantasyon Sistemi</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'DM Sans', sans-serif; background-color: #f3f4f6; }
@@ -287,40 +288,19 @@
    </div>
   </div>
 
-  <script>
-    // --- LOKAL VERİ TABANI SİMÜLASYONU (Canva SDK Yerine) ---
-    window.dataSdk = {
-      data: JSON.parse(localStorage.getItem('dolfin_docs')) || [],
-      handler: null,
-      async init(handler) {
-        this.handler = handler;
-        if(this.handler && this.handler.onDataChanged) {
-            this.handler.onDataChanged(this.data);
-        }
-      },
-      async create(newItem) {
-        newItem.__backendId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-        this.data.push(newItem);
-        localStorage.setItem('dolfin_docs', JSON.stringify(this.data));
-        if(this.handler) this.handler.onDataChanged(this.data);
-        return { isOk: true };
-      },
-      async delete(target) {
-        this.data = this.data.filter(d => d.__backendId !== target.__backendId);
-        localStorage.setItem('dolfin_docs', JSON.stringify(this.data));
-        if(this.handler) this.handler.onDataChanged(this.data);
-        return { isOk: true };
-      }
-    };
-    // --------------------------------------------------------
+    <script>
+    // --- SUPABASE BAĞLANTISI ---
+    const SUPABASE_URL = 'https://unttjuqydgngfqxxhqps.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_BORGWK_HJP9KolhGrLnMWw_FkR0Oj3k';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let allData = [];
+    let allData = { machines: [], documents: [], machine_docs: [] };
     let currentSerial = '';
     let currentModel = '';
     let deleteTarget = null;
     let assignTargetMachine = null;
-    let currentAdminTab = 'dokuman'; // Hangi sekmede olduğumuzu takip edecek
-    
+    let currentAdminTab = 'dokuman';
+
     // Dokuman tipi → kod kısaltması
     const docTypeCodeMap = {
       'Kullanım Kılavuzu': 'KK',
@@ -330,6 +310,82 @@
       'CE Belgesi': 'CE',
       'Garanti Belgesi': 'GB'
     };
+
+    // --- VERİ YÜKLEME ---
+    async function loadAllData() {
+      const [machinesRes, documentsRes, machineDocsRes] = await Promise.all([
+        supabase.from('machines').select('*').order('created_at', { ascending: false }),
+        supabase.from('documents').select('*').order('created_at', { ascending: false }),
+        supabase.from('machine_documents').select('*')
+      ]);
+      
+      if (machinesRes.error) console.error('Machines error:', machinesRes.error);
+      if (documentsRes.error) console.error('Documents error:', documentsRes.error);
+      if (machineDocsRes.error) console.error('Machine_Docs error:', machineDocsRes.error);
+      
+      allData.machines = machinesRes.data || [];
+      allData.documents = documentsRes.data || [];
+      allData.machine_docs = machineDocsRes.data || [];
+      
+      renderAdminTable();
+      renderMachineTable();
+      renderDocsList();
+    }
+
+    // --- MAKİNE EKLE ---
+    async function addMachine(serial, upper, lower) {
+      const docCode = upper + '-' + serial;
+      const { data, error } = await supabase.from('machines').insert({
+        serial_number: serial,
+        upper_serial: upper,
+        lower_serial: lower,
+        document_code: docCode
+      }).select();
+      
+      if (error) return { isOk: false, error: error.message };
+      await loadAllData();
+      return { isOk: true };
+    }
+
+    // --- DOKÜMAN EKLE ---
+    async function addDocument(name, file, upperSerial, lowerSerial, docType, version, docCode) {
+      const uploadDate = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase.from('documents').insert({
+        document_name: name,
+        document_file: file,
+        machine_model: lowerSerial,
+        upper_serial: upperSerial,
+        lower_serial: lowerSerial,
+        document_type: docType,
+        version_number: version,
+        upload_date: uploadDate,
+        document_code: docCode
+      }).select();
+      
+      if (error) return { isOk: false, error: error.message };
+      await loadAllData();
+      return { isOk: true };
+    }
+
+    // --- DOKÜMAN SİL ---
+    async function deleteDocument(docId) {
+      const { error } = await supabase.from('documents').delete().eq('id', docId);
+      if (error) return { isOk: false, error: error.message };
+      await loadAllData();
+      return { isOk: true };
+    }
+
+    // --- MAKİNEYE DOKÜMAN TANIMLA ---
+    async function assignDocumentToMachine(machineId, documentId) {
+      const { data, error } = await supabase.from('machine_documents').insert({
+        machine_id: machineId,
+        document_id: documentId
+      }).select();
+      
+      if (error) return { isOk: false, error: error.message };
+      await loadAllData();
+      return { isOk: true };
+    }
 
     function showView(id) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -373,17 +429,8 @@ function switchTab(tab) {
       document.getElementById('admin-doccode').value = upperSerial + typeCode + version;
     }
 
-const handler = {
-  onDataChanged(data) {
-    allData = data;
-    renderAdminTable();   // Doküman tablosunu doldurur
-    renderMachineTable(); // Makine tablosunu doldurur (Yeni eklenen)
-    renderDocsList();     // Müşteri ekranını doldurur
-  }
-};
-
     (async () => {
-      await window.dataSdk.init(handler);
+      await loadAllData();
       lucide.createIcons();
       switchTab('dokuman');
     })();
@@ -435,7 +482,7 @@ const handler = {
       assignTargetMachine = null;
     });
 
-    // Makineye Doküman Tanımlama Formu
+        // Makineye Doküman Tanımlama Formu
     document.getElementById('assign-doc-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const docCode = document.getElementById('assign-doc-code').value.trim();
@@ -446,8 +493,8 @@ const handler = {
         return;
       }
       
-            // Doküman koduna sahip kaydı bul
-      const docRecord = allData.find(d => d.document_code === docCode && d.document_type !== 'Sistem Kaydı');
+      // Doküman koduna sahip kaydı bul
+      const docRecord = allData.documents.find(d => d.document_code === docCode);
       
       if (!docRecord) {
         document.getElementById('assign-error').textContent = 'Bu kodla eşleşen bir doküman bulunamadı.';
@@ -455,39 +502,36 @@ const handler = {
         return;
       }
       
-      // machine_serial bir dizi değilse (eski kayıtlar) diziye çevir
-      if (!Array.isArray(docRecord.machine_serial)) {
-        docRecord.machine_serial = docRecord.machine_serial ? [docRecord.machine_serial] : [];
-      }
-      
-      // Eğer doküman zaten bu makineye tanımlanmışsa uyar
-      if (docRecord.machine_serial.includes(assignTargetMachine.serial_number)) {
+      // Zaten tanımlanmış mı kontrol et
+      const alreadyAssigned = allData.machine_docs.some(md => md.machine_id === assignTargetMachine.id && md.document_id === docRecord.id);
+      if (alreadyAssigned) {
         document.getElementById('assign-error').textContent = 'Bu doküman zaten bu makineye tanımlanmış.';
         document.getElementById('assign-error').classList.remove('hidden');
         return;
       }
       
-      // Doküman kaydını güncelle: machine_serial dizisine yeni seri numarasını ekle
-      docRecord.machine_serial.push(assignTargetMachine.serial_number);
+      const btn = e.target.querySelector('button[type=submit]');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
       
-      // localStorage'a kaydet
-      localStorage.setItem('dolfin_docs', JSON.stringify(allData));
+      const result = await assignDocumentToMachine(assignTargetMachine.id, docRecord.id);
       
-      // UI'ı güncelle
-      document.getElementById('assign-status').classList.remove('hidden');
-      document.getElementById('assign-error').classList.add('hidden');
-      document.getElementById('assign-doc-code').value = '';
+      if (result.isOk) {
+        document.getElementById('assign-status').classList.remove('hidden');
+        document.getElementById('assign-error').classList.add('hidden');
+        document.getElementById('assign-doc-code').value = '';
+        setTimeout(() => {
+          document.getElementById('assign-status').classList.add('hidden');
+          document.getElementById('assign-doc-modal').classList.add('hidden');
+          assignTargetMachine = null;
+        }, 2000);
+      } else {
+        document.getElementById('assign-error').textContent = result.error || 'Hata oluştu.';
+        document.getElementById('assign-error').classList.remove('hidden');
+      }
       
-      // Tabloları yeniden render et
-      renderMachineTable();
-      renderAdminTable();
-      renderDocsList();
-      
-      setTimeout(() => {
-        document.getElementById('assign-status').classList.add('hidden');
-        document.getElementById('assign-doc-modal').classList.add('hidden');
-        assignTargetMachine = null;
-      }, 2000);
+      btn.disabled = false;
+      btn.style.opacity = '1';
     });
 
     // Yeni Makine Modalı Kapatma Butonları (Hemen altına ekleyebilirsin)
@@ -529,19 +573,27 @@ const handler = {
     document.getElementById('tab-dokuman').addEventListener('click', () => switchTab('dokuman'));
     document.getElementById('tab-makine').addEventListener('click', () => switchTab('makine'));
     
-        // Docs list for regular users
+            // Docs list for regular users
     function renderDocsList() {
       const container = document.getElementById('docs-list');
       const empty = document.getElementById('docs-empty');
-      // Kullanıcının girdiği bilgilere göre filtrele:
-      // - Makine seri nosu eşleşen dokümanlar (machine_serial dizisinde varsa)
-      // - Veya lower_serial model adıyla eşleşen dokümanlar
-      const filtered = allData.filter(d => {
-        if (d.document_type === 'Sistem Kaydı') return false;
-        const serialMatch = Array.isArray(d.machine_serial) && d.machine_serial.includes(currentSerial);
-        const modelMatch = d.lower_serial && d.lower_serial.toLowerCase().includes(currentModel.toLowerCase());
-        return serialMatch || modelMatch;
-      });
+      
+      // Kullanıcının girdiği seri numarasına ait makineyi bul
+      const userMachine = allData.machines.find(m => m.serial_number === currentSerial);
+      let filtered = [];
+      
+      if (userMachine) {
+        // Bu makineye tanımlı dokümanların ID'lerini bul
+        const assignedIds = allData.machine_docs.filter(md => md.machine_id === userMachine.id).map(md => md.document_id);
+        filtered = allData.documents.filter(d => assignedIds.includes(d.id));
+      }
+      
+      // Model adıyla da eşleştir (eski mantık)
+      if (filtered.length === 0 && currentModel) {
+        filtered = allData.documents.filter(d => 
+          d.lower_serial && d.lower_serial.toLowerCase().includes(currentModel.toLowerCase())
+        );
+      }
       
       if (filtered.length === 0) { 
           container.innerHTML = ''; 
@@ -564,7 +616,7 @@ const handler = {
       lucide.createIcons();
     }
 
-    // Admin form
+        // Admin form
     document.getElementById('admin-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('admin-docname').value.trim();
@@ -580,26 +632,11 @@ const handler = {
         return;
       }
       
-      const uploadDate = new Date().toISOString().split('T')[0];
-      
-            const result = await window.dataSdk.create({
-              document_name: name,
-              document_file: selectedFile.name,
-              machine_model: lowerSerial,
-              serial_number: '',
-              machine_serial: [], // Hangi makinelere ait olduğu (sonradan tanımlanabilir, birden çok olabilir)
-              upper_serial: upperSerial,
-              lower_serial: lowerSerial,
-              document_type: docType,
-              version_number: version,
-              upload_date: uploadDate,
-              document_code: docCode,
-              created_at: new Date().toISOString()
-            });
-      
       const btn = e.target.querySelector('button[type=submit]');
       btn.disabled = true;
       btn.style.opacity = '0.5';
+      
+      const result = await addDocument(name, selectedFile.name, upperSerial, lowerSerial, docType, version, docCode);
       
       if (result.isOk) {
         document.getElementById('admin-status').classList.remove('hidden');
@@ -613,7 +650,7 @@ const handler = {
           document.getElementById('add-modal').classList.add('hidden');
         }, 2000);
       } else {
-        document.getElementById('admin-error').textContent = 'Hata oluştu.';
+        document.getElementById('admin-error').textContent = result.error || 'Hata oluştu.';
         document.getElementById('admin-error').classList.remove('hidden');
       }
       
@@ -621,18 +658,19 @@ const handler = {
       btn.style.opacity = '1';
     });
     
-    // Admin table
+        // Admin table
     function renderAdminTable() {
       const tbody = document.getElementById('admin-table-body');
       const empty = document.getElementById('admin-empty');
-      if (allData.length === 0) { 
+      const docs = allData.documents || [];
+      if (docs.length === 0) { 
           tbody.innerHTML = ''; 
           empty.classList.remove('hidden'); 
           return;
       }
       
       empty.classList.add('hidden');
-      tbody.innerHTML = allData.map(d => `
+      tbody.innerHTML = docs.map(d => `
         <tr class="border-b hover:bg-gray-50 transition">
           <td class="px-4 py-3 font-medium text-gray-800">${esc(d.document_name)}</td>
           <td class="px-4 py-3">${esc(d.upper_serial)}</td>
@@ -647,7 +685,7 @@ const handler = {
               </a>
           </td>
           <td class="px-4 py-3">
-              <button type="button" class="text-gray-400 hover:text-red-600 transition" onclick="confirmDelete('${d.__backendId}')" title="Sil">
+              <button type="button" class="text-gray-400 hover:text-red-600 transition" onclick="confirmDelete('${d.id}')" title="Sil">
                   <i data-lucide="trash-2" style="width:18px;height:18px"></i>
               </button>
           </td>
@@ -656,14 +694,14 @@ const handler = {
       lucide.createIcons();
     }
 
-                function renderMachineTable() {
+                    function renderMachineTable() {
   const tbody = document.getElementById('machine-table-body');
   const empty = document.getElementById('machine-empty');
   if (!tbody || !empty) return;
 
-  // Sadece makine kayıtlarını filtrele (document_type === 'Sistem Kaydı' olanlar)
-  const machines = allData.filter(d => d.document_type === 'Sistem Kaydı');
-  const docs = allData.filter(d => d.document_type !== 'Sistem Kaydı');
+  const machines = allData.machines || [];
+  const docs = allData.documents || [];
+  const machineDocs = allData.machine_docs || [];
 
   if (machines.length === 0) { 
       tbody.innerHTML = ''; 
@@ -674,8 +712,7 @@ const handler = {
   empty.classList.add('hidden');
   
   let html = '';
-  machines.forEach((m, idx) => {
-    // Makine üst satırı
+  machines.forEach((m) => {
     html += `
       <tr class="bg-gray-50 font-semibold border-b-2 border-gray-300">
         <td class="px-4 py-3 text-gray-800">${esc(m.serial_number)}</td>
@@ -685,14 +722,15 @@ const handler = {
         <td class="px-4 py-3 font-mono text-xs text-gray-500">${esc(m.document_code)}</td>
         <td class="px-4 py-3">—</td>
         <td class="px-4 py-3">
-          <button type="button" class="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium text-xs transition" onclick="openAssignDocModal('${esc(m.serial_number)}')" title="Doküman Tanımla">
+          <button type="button" class="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium text-xs transition" onclick="openAssignDocModal('${m.id}')" title="Doküman Tanımla">
             <i data-lucide="plus-circle" style="width:16px;height:16px"></i> <span>Doküman Ekle</span>
           </button>
         </td>
       </tr>`;
     
-        // Bu makineye atanmış dokümanları bul (machine_serial dizisinde bu makinenin seri nosu geçenler)
-    const assignedDocs = docs.filter(d => Array.isArray(d.machine_serial) && d.machine_serial.includes(m.serial_number));
+    // Bu makineye atanmış dokümanları bul (machine_docs ara tablosundan)
+    const assignedIds = machineDocs.filter(md => md.machine_id === m.id).map(md => md.document_id);
+    const assignedDocs = docs.filter(d => assignedIds.includes(d.id));
     
     if (assignedDocs.length > 0) {
       assignedDocs.forEach(d => {
@@ -718,18 +756,18 @@ const handler = {
   lucide.createIcons();
 }
 
-    function openAssignDocModal(serialNumber) {
-      assignTargetMachine = allData.find(d => d.serial_number === serialNumber && d.document_type === 'Sistem Kaydı');
+    function openAssignDocModal(machineId) {
+      assignTargetMachine = allData.machines.find(m => m.id === machineId);
       if (!assignTargetMachine) return;
-      document.getElementById('assign-machine-serial-display').value = serialNumber;
+      document.getElementById('assign-machine-serial-display').value = assignTargetMachine.serial_number;
       document.getElementById('assign-doc-code').value = '';
       document.getElementById('assign-status').classList.add('hidden');
       document.getElementById('assign-error').classList.add('hidden');
       document.getElementById('assign-doc-modal').classList.remove('hidden');
     }
 
-    function confirmDelete(id) {
-      deleteTarget = allData.find(d => d.__backendId === id);
+        function confirmDelete(id) {
+      deleteTarget = allData.documents.find(d => d.id === id);
       if (!deleteTarget) return;
       document.getElementById('confirm-modal').classList.remove('hidden');
     }
@@ -744,7 +782,12 @@ const handler = {
       const btn = document.getElementById('confirm-ok');
       btn.disabled = true;
       btn.style.opacity = '0.5';
-      await window.dataSdk.delete(deleteTarget);
+      
+      // Önce ilişkili machine_documents kayıtlarını sil
+      await supabase.from('machine_documents').delete().eq('document_id', deleteTarget.id);
+      // Sonra dokümanı sil
+      await deleteDocument(deleteTarget.id);
+      
       btn.disabled = false;
       btn.style.opacity = '1';
       document.getElementById('confirm-modal').classList.add('hidden');
@@ -770,27 +813,11 @@ const handler = {
         return;
       }
       
-      const uploadDate = new Date().toISOString().split('T')[0];
-      
-            // Veritabanına kayıt atıyoruz (Döküman alanları makine kaydı olduğu için temiz geçiyor)
-      const result = await window.dataSdk.create({
-        document_name: 'Yeni Makine Tanımı',
-        document_file: '',
-        machine_model: lower,
-        serial_number: serial,
-        machine_serial: [],
-        upper_serial: upper,
-        lower_serial: lower,
-        document_type: 'Sistem Kaydı',
-        version_number: '-',
-        upload_date: uploadDate,
-        document_code: upper + '-' + serial,
-        created_at: new Date().toISOString()
-      });
-      
       const btn = e.target.querySelector('button[type=submit]');
       btn.disabled = true;
       btn.style.opacity = '0.5';
+      
+      const result = await addMachine(serial, upper, lower);
       
       if (result.isOk) {
         document.getElementById('machine-status').classList.remove('hidden');
@@ -801,7 +828,7 @@ const handler = {
           document.getElementById('add-machine-modal').classList.add('hidden');
         }, 2000);
       } else {
-        document.getElementById('machine-error').textContent = 'Hata oluştu.';
+        document.getElementById('machine-error').textContent = result.error || 'Hata oluştu.';
         document.getElementById('machine-error').classList.remove('hidden');
       }
       
